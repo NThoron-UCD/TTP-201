@@ -6,10 +6,12 @@ library(tidyverse)
 library(lubridate)
 
 main_wd <- getwd()
-temp_wd <- "C:/Users/nthor/University of California, Davis/TTP 210 - General/TTP 201 ADA/DataAnalysis"
+#temp_wd <- "C:/Users/nthor/University of California, Davis/TTP 210 - General/TTP 201 ADA/DataAnalysis"
+temp_wd <- "C:/Users/Noah/University of California, Davis/TTP 210 - General/TTP 201 ADA/DataAnalysis"
 setwd(temp_wd)
 
 Sep21 <- read_excel("pax_September_2021_analysis.xlsx", sheet = "pax_data")
+Oct21 <- read_excel("pax_October_2021_analysis.xlsx", sheet = "pax_data")
 Nov21 <- read_excel("pax_November_2021_analysis.xlsx", sheet = "pax_data")
 Dec21 <- read_excel("pax_December_2021_analysis.xlsx", sheet = "pax_data")
 Jan22 <- read_excel("pax_January_2022_analysis.xlsx", sheet = "pax_data")
@@ -18,7 +20,7 @@ Mar22 <- read_excel("pax_March_2022_analysis.xlsx", sheet = "pax_data")
 
 setwd(main_wd)
 
-SepToMar <- bind_rows(Sep21, Nov21, Dec21, Jan22, Feb22, Mar22)
+SepToMar <- bind_rows(Sep21, Oct21, Nov21, Dec21, Jan22, Feb22, Mar22)
 
 # Renaming
 names(SepToMar)[names(SepToMar) == "Line...11"] <- 'Line Long'
@@ -34,3 +36,5 @@ SepToMar <- SepToMar %>% mutate(
   `Adj Arr` = ymd_hms(paste(Date, format(`Adj Arr`, format = "%H:%M:%S"))),
   `Adj Dep` = ymd_hms(paste(Date, format(`Adj Dep`, format = "%H:%M:%S")))
 )
+
+write.csv(SepToMar, "Data/SepToMarData.csv")
