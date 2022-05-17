@@ -2,6 +2,8 @@ library(data.table)
 library(readxl)
 library(tidyverse)
 library(lubridate)
+library(ggplot2)
+library(patchwork)
 
 WorkingData <- fread("Data/SepToMarData.csv")
 
@@ -25,3 +27,16 @@ summary(lm(Late_Early ~ WorkingData$StartHour + WorkingData$StartHourSqrd + Work
 plot(WorkingData$`Start Time (Scheduled)`, WorkingData$Late_Early)
 
 basicAgg <- aggregate(Late_Early ~ Date, data = WorkingData, mean)
+plot(basicAgg)
+
+passAgg <- aggregate(Total ~ Date, data = WorkingData, mean)
+plot(passAgg)
+
+coeff = 5
+ggplot() +
+  geom_point(data = passAgg, aes(x = Date, y = Total), color = "blue") +
+  geom_point(data = basicAgg, aes(x = Date, y = (Late_Early+5)*coeff), color = "red") + 
+  scale_y_continuous(
+    name = "Total Passengers vs Late/Early"#,
+    #sec.axis = sec.axis(~.*coeff, name = "Late/Early")
+  )

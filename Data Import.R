@@ -10,15 +10,17 @@ main_wd <- getwd()
 temp_wd <- "C:/Users/Noah/University of California, Davis/TTP 210 - General/TTP 201 ADA/DataAnalysis"
 setwd(temp_wd)
 
-Sep21 <- read_excel("pax_September_2021_analysis.xlsx", sheet = "pax_data")
-Oct21 <- read_excel("pax_October_2021_analysis.xlsx", sheet = "pax_data")
-Nov21 <- read_excel("pax_November_2021_analysis.xlsx", sheet = "pax_data")
-Dec21 <- read_excel("pax_December_2021_analysis.xlsx", sheet = "pax_data")
-Jan22 <- read_excel("pax_January_2022_analysis.xlsx", sheet = "pax_data")
-Feb22 <- read_excel("pax_February_2022_analysis.xlsx", sheet = "pax_data")
-Mar22 <- read_excel("pax_March_2022_analysis.xlsx", sheet = "pax_data")
+Sep21 <- read_excel("pax_September_2021_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+Oct21 <- read_excel("pax_October_2021_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+Nov21 <- read_excel("pax_November_2021_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+Dec21 <- read_excel("pax_December_2021_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+Jan22 <- read_excel("pax_January_2022_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+Feb22 <- read_excel("pax_February_2022_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+Mar22 <- read_excel("pax_March_2022_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
 
 setwd(main_wd)
+
+#names(Feb22)[1:length(names(Sep21))] <- names(Sep21)
 
 SepToMar <- bind_rows(Sep21, Oct21, Nov21, Dec21, Jan22, Feb22, Mar22)
 
