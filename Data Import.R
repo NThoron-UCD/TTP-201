@@ -1,5 +1,7 @@
 # Importing data here:
 
+rm(list = ls())
+
 library(data.table)
 library(readxl)
 library(tidyverse)
@@ -17,6 +19,11 @@ Dec21 <- read_excel("pax_December_2021_analysis.xlsx", sheet = "pax_data", range
 Jan22 <- read_excel("pax_January_2022_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
 Feb22 <- read_excel("pax_February_2022_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
 Mar22 <- read_excel("pax_March_2022_analysis.xlsx", sheet = "pax_data", range = cell_cols("A:AB"))
+
+covid <- fread("covid19cases_test.csv")
+# From:
+# https://data.chhs.ca.gov/dataset/covid-19-time-series-metrics-by-county-and-state
+
 
 setwd(main_wd)
 
@@ -38,5 +45,12 @@ SepToMar <- SepToMar %>% mutate(
   `Adj Arr` = ymd_hms(paste(Date, format(`Adj Arr`, format = "%H:%M:%S"))),
   `Adj Dep` = ymd_hms(paste(Date, format(`Adj Dep`, format = "%H:%M:%S")))
 )
+
+covid <- covid %>% mutate(
+  Date = as.Date(date, "%m/%d/%Y")
+)
+
+# Setting up COVID data
+SepToMar <- merge(x = SepToMar, y = covid[,c("Date", "cases", "deaths")], by = "Date", all.x = TRUE)
 
 write.csv(SepToMar, "Data/SepToMarData.csv")

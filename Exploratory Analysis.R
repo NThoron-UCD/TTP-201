@@ -1,9 +1,12 @@
+rm(list = ls())
+
 library(data.table)
 library(readxl)
 library(tidyverse)
 library(lubridate)
 library(ggplot2)
-library(patchwork)
+library(patchwork) # For dual axis charts
+library(MASS) # For stepwise regression
 
 WorkingData <- fread("Data/SepToMarData.csv")
 
@@ -24,6 +27,20 @@ summary(lm(Late_Early ~ as.factor(`Line Short`) + WC + In + Out + Miles + `Pay T
 summary(lm(Late_Early ~ WorkingData$StartHour + WorkingData$StartHourSqrd + WorkingData$StartHourCubd
            , data = WorkingData))
 
+summary(lm(Late_Early ~ Total + In + Out
+           , data = WorkingData))
+
+summary(lm(Late_Early ~ cases + deaths
+           , data = WorkingData))
+
+full.model <- lm(Late_Early ~ Date + `Start Time (Scheduled)` + `Pay Time` + WC + In + Out + Total + Miles +
+                   as.factor(`Line Short`) + as.factor(Column) + as.factor(Capac) + Crowd + StartHour + 
+                   StartHourSqrd + StartHourCubd + cases + deaths
+                 , data = WorkingData)
+step.model <- stepAIC(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+
 plot(WorkingData$`Start Time (Scheduled)`, WorkingData$Late_Early)
 
 basicAgg <- aggregate(Late_Early ~ Date, data = WorkingData, mean)
@@ -32,11 +49,14 @@ plot(basicAgg)
 passAgg <- aggregate(Total ~ Date, data = WorkingData, mean)
 plot(passAgg)
 
+caseAgg <- aggregate(cases ~ Date, data = WorkingData, mean)
+plot(caseAgg)
+
 coeff = 5
 ggplot() +
   geom_point(data = passAgg, aes(x = Date, y = Total), color = "blue") +
   geom_point(data = basicAgg, aes(x = Date, y = (Late_Early+5)*coeff), color = "red") + 
   scale_y_continuous(
-    name = "Total Passengers vs Late/Early"#,
-    #sec.axis = sec.axis(~.*coeff, name = "Late/Early")
+    name = "Total Passengers",
+    sec.axis = sec_axis(~./coeff-5, name = "Late/Early")
   )
