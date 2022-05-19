@@ -57,7 +57,7 @@ plot(caseAgg)
 coeff = 5
 ggplot() +
   geom_point(data = passAgg, aes(x = Date, y = Total), color = "blue") +
-  geom_point(data = basicAgg, aes(x = Date, y = (Late_Early+5)*coeff), color = "red") + 
+  geom_point(data = basicAgg, aes(x = Date, y = (Late_Early+5)*coeff), color = "black") + 
   scale_y_continuous(
     name = "Total Passengers",
     sec.axis = sec_axis(~./coeff-5, name = "Late/Early")
