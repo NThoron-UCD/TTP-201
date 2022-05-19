@@ -18,6 +18,9 @@ WorkingData$StartHour <- hour(WorkingData$`Start Time (Scheduled)`)
 WorkingData$StartHourSqrd <- WorkingData$StartHour^2
 WorkingData$StartHourCubd <- WorkingData$StartHour^3
 
+WorkingData$LateOrEarly <- ifelse(WorkingData$Late_Early > 0 , 1, 0)
+WorkingData$VeryLOE <- ifelse(abs(WorkingData$Late_Early) >= 60, 1, 0)
+
 #Exploratory regressions
 summary(lm(Late_Early ~ as.factor(`Line Short`) + WC + In + Out + Miles + `Pay Time` + as.factor(Capac) + Crowd
            + am(`Start Time (Scheduled)`) + WorkingData$StartHour + WorkingData$StartHourSqrd + WorkingData$StartHourCubd
@@ -33,7 +36,7 @@ summary(lm(Late_Early ~ cases + deaths
            , data = WorkingData))
 
 
-#Stepwie Regression
+#Stepwise Regression
 full.model <- lm(Late_Early ~ Date + `Start Time (Scheduled)` + `Pay Time` + WC + In + Out + Total + Miles +
                    as.factor(`Line Short`) + as.factor(Column) + as.factor(Capac) + Crowd + StartHour + 
                    StartHourSqrd + StartHourCubd + cases + deaths
@@ -57,7 +60,7 @@ plot(caseAgg)
 coeff = 5
 ggplot() +
   geom_point(data = passAgg, aes(x = Date, y = Total), color = "blue") +
-  geom_point(data = basicAgg, aes(x = Date, y = (Late_Early+5)*coeff), color = "black") + 
+  geom_point(data = basicAgg, aes(x = Date, y = (Late_Early+5)*coeff), color = "green") + 
   scale_y_continuous(
     name = "Total Passengers",
     sec.axis = sec_axis(~./coeff-5, name = "Late/Early")
