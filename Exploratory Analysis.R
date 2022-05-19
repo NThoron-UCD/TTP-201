@@ -18,11 +18,10 @@ WorkingData$StartHour <- hour(WorkingData$`Start Time (Scheduled)`)
 WorkingData$StartHourSqrd <- WorkingData$StartHour^2
 WorkingData$StartHourCubd <- WorkingData$StartHour^3
 
-
+#Exploratory regressions
 summary(lm(Late_Early ~ as.factor(`Line Short`) + WC + In + Out + Miles + `Pay Time` + as.factor(Capac) + Crowd
            + am(`Start Time (Scheduled)`) + WorkingData$StartHour + WorkingData$StartHourSqrd + WorkingData$StartHourCubd
            , data = WorkingData))
-
 
 summary(lm(Late_Early ~ WorkingData$StartHour + WorkingData$StartHourSqrd + WorkingData$StartHourCubd
            , data = WorkingData))
@@ -33,6 +32,8 @@ summary(lm(Late_Early ~ Total + In + Out
 summary(lm(Late_Early ~ cases + deaths
            , data = WorkingData))
 
+
+#Stepwie Regression
 full.model <- lm(Late_Early ~ Date + `Start Time (Scheduled)` + `Pay Time` + WC + In + Out + Total + Miles +
                    as.factor(`Line Short`) + as.factor(Column) + as.factor(Capac) + Crowd + StartHour + 
                    StartHourSqrd + StartHourCubd + cases + deaths
@@ -41,8 +42,9 @@ step.model <- stepAIC(full.model, direction = "both",
                       trace = FALSE)
 summary(step.model)
 
-plot(WorkingData$`Start Time (Scheduled)`, WorkingData$Late_Early)
 
+
+# Some plots to visualize average daily stuff.
 basicAgg <- aggregate(Late_Early ~ Date, data = WorkingData, mean)
 plot(basicAgg)
 
