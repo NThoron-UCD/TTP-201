@@ -24,6 +24,7 @@ covid <- fread("covid19cases_test.csv")
 # From:
 # https://data.chhs.ca.gov/dataset/covid-19-time-series-metrics-by-county-and-state
 
+Enrollment <- read_excel("Enrollment.xlsx", sheet = "All Students", range = cell_cols("A:F"))
 
 setwd(main_wd)
 
