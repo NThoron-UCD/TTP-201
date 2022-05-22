@@ -66,12 +66,67 @@ Enrollment <- Enrollment %>% mutate(
   Thursday = ifelse(grepl("R", CRSE_DAYS, fixed = TRUE), 1, 0),
   Friday = ifelse(grepl("F", CRSE_DAYS, fixed = TRUE), 1, 0),
   Saturday = ifelse(grepl("S", CRSE_DAYS, fixed = TRUE), 1, 0),
-  Sunday = ifelse(grepl("U", CRSE_DAYS, fixed = TRUE), 1, 0)
+  Sunday = ifelse(grepl("U", CRSE_DAYS, fixed = TRUE), 1, 0),
+  StartTimeNum = as.numeric(substr(StartTime, 1, 2)) + as.numeric(substr(StartTime, 3, 4))/60,
+  EndTimeNum = as.numeric(substr(EndTime, 1, 2)) + as.numeric(substr(EndTime, 3, 4))/60
 )
 
 Enrollment <- subset(Enrollment, CRSE_TIME != "-")
 Enrollment <- subset(Enrollment, BLDG != "OFFCAM")
 Enrollment <- subset(Enrollment, BLDG != "ONLINE")
+Enrollment <- subset(Enrollment, BLDG != "REMOTE")
+
+Precision <- 10 # This is the level of precision in our schedule, or how many minutes between each block
+Passing_Period <- 15 # This is the number of minutes before and after to look at
+
+Schedule <- data.frame(
+  Day = c(
+    rep("Monday", 24*60/Precision+1), rep("Tuesday", 24*60/Precision+1), rep("Wednesday", 24*60/Precision+1), rep("Thursday", 24*60/Precision+1), rep("Friday", 24*60/Precision+1), rep("Saturday", 24*60/Precision+1), rep("Sunday", 24*60/Precision+1)
+    ),
+  Time = c(
+    seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60)
+    )
+  )
+Schedule$IncomingStudents <- 0
+Schedule$OutgoingStudents <- 0
+
+# This is a pile of stinking garbage code and I hate it but I don't know how else to do it. This also needs to be setup for the quarters.
+for (x in 1:nrow(Schedule)) {
+  if (Schedule[x,]$Day == "Monday") {
+    dayofweek <- subset(Enrollment, Monday == 1)
+  }
+  if (Schedule[x,]$Day == "Tuesday") {
+    dayofweek <- subset(Enrollment, Tuesday == 1)
+  }
+  if (Schedule[x,]$Day == "Wednesday") {
+    dayofweek <- subset(Enrollment, Wednesday == 1)
+  }
+  if (Schedule[x,]$Day == "Thursday") {
+    dayofweek <- subset(Enrollment, Thursday == 1)
+  }
+  if (Schedule[x,]$Day == "Friday") {
+    dayofweek <- subset(Enrollment, Friday == 1)
+  }
+  if (Schedule[x,]$Day == "Saturday") {
+    dayofweek <- subset(Enrollment, Saturday == 1)
+  }
+  if (Schedule[x,]$Day == "Sunday") {
+    dayofweek <- subset(Enrollment, Sunday == 1)
+  }
+  ins <- subset(dayofweek, 
+                StartTimeNum >= Schedule[x,]$Time - Passing_Period/60 & 
+                  StartTimeNum <= Schedule[x,]$Time + Passing_Period/60
+                )
+  outs <- subset(dayofweek, 
+                 EndTimeNum >= Schedule[x,]$Time - Passing_Period/60 & 
+                   EndTimeNum <= Schedule[x,]$Time + Passing_Period/60
+  )
+  Schedule[x,]$IncomingStudents <- ifelse(!is.na(sum(ins$ENROLLED)),sum(ins$ENROLLED),0)
+  Schedule[x,]$OutgoingStudents <- ifelse(!is.na(sum(outs$ENROLLED)),sum(outs$ENROLLED),0)
+}
+
+view(Schedule)
+
 
 
 # Setting up COVID data
