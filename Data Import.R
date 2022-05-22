@@ -51,6 +51,29 @@ covid <- covid %>% mutate(
   Date = as.Date(date, "%m/%d/%Y")
 )
 
+Enrollment_saved <- Enrollment
+Enrollment <- Enrollment_saved
+
+Enrollment <- Enrollment %>% mutate(
+  TERM = ifelse(TERM == 202109, "Fall Semester", 
+                 ifelse(TERM == 202110, "Fall Quarter",
+                        ifelse(TERM == 202201, "Winter Quarter", NA))),
+  StartTime = str_split(CRSE_TIME, "-", simplify = TRUE)[,1],
+  EndTime = str_split(CRSE_TIME, "-", simplify = TRUE)[,2],
+  Monday = ifelse(grepl("M", CRSE_DAYS, fixed = TRUE), 1, 0),
+  Tuesday = ifelse(grepl("T", CRSE_DAYS, fixed = TRUE), 1, 0),
+  Wednesday = ifelse(grepl("W", CRSE_DAYS, fixed = TRUE), 1, 0),
+  Thursday = ifelse(grepl("R", CRSE_DAYS, fixed = TRUE), 1, 0),
+  Friday = ifelse(grepl("F", CRSE_DAYS, fixed = TRUE), 1, 0),
+  Saturday = ifelse(grepl("S", CRSE_DAYS, fixed = TRUE), 1, 0),
+  Sunday = ifelse(grepl("U", CRSE_DAYS, fixed = TRUE), 1, 0)
+)
+
+Enrollment <- subset(Enrollment, CRSE_TIME != "-")
+Enrollment <- subset(Enrollment, BLDG != "OFFCAM")
+Enrollment <- subset(Enrollment, BLDG != "ONLINE")
+
+
 # Setting up COVID data
 SepToMar <- merge(x = SepToMar, y = covid[,c("Date", "cases", "deaths")], by = "Date", all.x = TRUE)
 
