@@ -25,6 +25,7 @@ covid <- fread("covid19cases_test.csv")
 # https://data.chhs.ca.gov/dataset/covid-19-time-series-metrics-by-county-and-state
 
 Enrollment <- read_excel("Enrollment.xlsx", sheet = "All Students", range = cell_cols("A:F"))
+Calendar <- read_excel("Academic Calendar.xlsx", sheet = "Sheet1")
 
 setwd(main_wd)
 
@@ -75,6 +76,7 @@ Enrollment <- subset(Enrollment, CRSE_TIME != "-")
 Enrollment <- subset(Enrollment, BLDG != "OFFCAM")
 Enrollment <- subset(Enrollment, BLDG != "ONLINE")
 Enrollment <- subset(Enrollment, BLDG != "REMOTE")
+Enrollment <- subset(Enrollment, BLDG != "BIMH")
 
 Precision <- 10 # This is the level of precision in our schedule, or how many minutes between each block
 Passing_Period <- 15 # This is the number of minutes before and after to look at
@@ -87,6 +89,18 @@ Schedule <- data.frame(
     seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60), seq(0, 24, by = Precision/60)
     )
   )
+len <- nrow(Schedule)
+Schedule <- data.frame(
+  Term = c(
+    rep("Fall Semester", len), rep("Fall Quarter", len), rep("Winter Quarter", len)
+  ),
+  Day = c(
+    Schedule$Day, Schedule$Day, Schedule$Day
+  ),
+  Time = c(
+    Schedule$Time, Schedule$Time, Schedule$Time
+  )
+)
 Schedule$IncomingStudents <- 0
 Schedule$OutgoingStudents <- 0
 
@@ -113,11 +127,14 @@ for (x in 1:nrow(Schedule)) {
   if (Schedule[x,]$Day == "Sunday") {
     dayofweek <- subset(Enrollment, Sunday == 1)
   }
-  ins <- subset(dayofweek, 
+  
+  termsubset <- subset(dayofweek, TERM == Schedule[x,]$Term)
+  
+  ins <- subset(termsubset, 
                 StartTimeNum >= Schedule[x,]$Time - Passing_Period/60 & 
                   StartTimeNum <= Schedule[x,]$Time + Passing_Period/60
                 )
-  outs <- subset(dayofweek, 
+  outs <- subset(termsubset, 
                  EndTimeNum >= Schedule[x,]$Time - Passing_Period/60 & 
                    EndTimeNum <= Schedule[x,]$Time + Passing_Period/60
   )
@@ -125,8 +142,87 @@ for (x in 1:nrow(Schedule)) {
   Schedule[x,]$OutgoingStudents <- ifelse(!is.na(sum(outs$ENROLLED)),sum(outs$ENROLLED),0)
 }
 
-view(Schedule)
+Combined_Schedule_Calendar <- data.frame(
+  Date = c(),
+  Time = c(),
+  Week = c(),
+  Holiday = c(),
+  Finals = c(),
+  IncomingStudents = c(),
+  OutgoingStudents = c()
+)
 
+for (n in 1:nrow(Calendar)) {
+  weekday_ref <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+  times <- subset(Schedule, Day == weekday_ref[Calendar[n,]$`Day Of Week`] & Term == Calendar[n,]$Term)
+  for (i in 1:nrow(times)) {
+    append_frame <- data.frame(
+      Date = Calendar[n,]$Date,
+      Time = Schedule[i,]$Time,
+      Week = Calendar[n,]$Week,
+      Holiday = Calendar[n,]$Holiday,
+      Finals = Calendar[n,]$`Finals?`,
+      IncomingStudents = Schedule[i,]$IncomingStudents,
+      OutgoingStudents = Schedule[i,]$OutgoingStudents
+    )
+    Combined_Schedule_Calendar <- rbind(Combined_Schedule_Calendar, append_frame)
+  }
+}
+
+Combined_Schedule_Calendar$DateTime <- ymd_hm(paste(Combined_Schedule_Calendar$Date, " ", floor(Combined_Schedule_Calendar$Time), ":", round(Combined_Schedule_Calendar$Time%%1*60), sep = ""))
+
+
+# This is more garbage code and it's terrible, but it should work...
+SepToMar$OutgoingAtScheduledStart <- NA
+SepToMar$IncomingAtScheduledEnd <- NA
+SepToMar$OutgoingAtRealStart <- NA
+SepToMar$IncomingAtRealEnd <- NA
+
+for (n in 1:nrow(SepToMar)){
+  target_time <- lubridate::round_date(SepToMar[n,]$`Start Time (Scheduled)`, "10 minutes")
+  working_subset <- subset(Combined_Schedule_Calendar, as_datetime(DateTime) == as_datetime(target_time))
+  if (nrow(working_subset) != 1) {
+    next
+  }
+  
+  SepToMar[n,]$OutgoingAtScheduledStart <- 
+    working_subset$OutgoingStudents
+  if(n%%500==0){print(n)}
+}
+  for (n in 1:nrow(SepToMar)){    
+  target_time <- lubridate::round_date(SepToMar[n,]$`End Time (Scheduled)`, "10 minutes")
+  working_subset <- subset(Combined_Schedule_Calendar, as_datetime(DateTime) == as_datetime(target_time))
+  if (nrow(subset(Combined_Schedule_Calendar, DateTime == target_time)) != 1) {
+    next
+  }
+  
+  SepToMar[n,]$IncomingAtScheduledEnd <- 
+    working_subset$IncomingStudents
+  if(n%%500==0){print(n)}
+}
+for (n in 1:nrow(SepToMar)){  
+  target_time <- lubridate::round_date(SepToMar[n,]$`Departure Time (Actual)`, "10 minutes")
+  working_subset <- subset(Combined_Schedule_Calendar, as_datetime(DateTime) == as_datetime(target_time))
+  if (nrow(subset(Combined_Schedule_Calendar, DateTime == target_time)) != 1) {
+    next
+  }
+  
+  SepToMar[n,]$OutgoingAtRealStart <- 
+    working_subset$OutgoingStudents
+  if(n%%500==0){print(n)}
+}
+for (n in 1:nrow(SepToMar)){  
+  target_time <- lubridate::round_date(SepToMar[n,]$`Arrival Time (Actual)`, "10 minutes")
+  working_subset <- subset(Combined_Schedule_Calendar, as_datetime(DateTime) == as_datetime(target_time))
+  if (nrow(subset(Combined_Schedule_Calendar, DateTime == target_time)) != 1) {
+    next
+  }
+  
+  SepToMar[n,]$IncomingAtRealEnd <- 
+    working_subset$IncomingStudents
+  
+  if(n%%500==0){print(n)}
+}
 
 
 # Setting up COVID data
