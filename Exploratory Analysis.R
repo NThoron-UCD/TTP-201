@@ -27,6 +27,11 @@ WorkingData$PMPeak <- ifelse((WorkingData$StartHour == 4 | WorkingData$StartHour
 WorkingData$EarlyMorLateNit <- ifelse((WorkingData$StartHour <= 6 | WorkingData$StartHour >= 21), 1, 0)
 WorkingData$Weekend <- ifelse((WorkingData$Column <= 70 & WorkingData$Column >= 60) , 1, 0)
 
+WorkingData$Terminal <- ifelse(WorkingData$`Line Short` %in% c('A','C','D','J','L','W','X'), 'Silo', 'MU')
+WorkingData$Run <- ifelse((minute(WorkingData$`Start Time (Scheduled)`)==0 | minute(WorkingData$`Start Time (Scheduled)`)==10), 'First run', 'Second run')
+WorkingData$FriPM <- ifelse(wday(WorkingData$Date)==5 & WorkingData$PMPeak==1, 1, 0)
+WorkingData <- subset(WorkingData,`Line Short` != "T")
+
 
 #Exploratory regressions
 summary(lm(Late_Early ~ as.factor(`Line Short`) + WC + In + Out + Miles + `Pay Time` + as.factor(Capac) + Crowd
