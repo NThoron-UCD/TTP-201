@@ -11,8 +11,9 @@ library(MASS) # For stepwise regression
 WorkingData <- fread("Data/SepToMarData.csv")
 
 WorkingData <- subset(WorkingData,`Line Long` != "ANY - On-Call")
-WorkingData <- WorkingData[!(is.na(WorkingData$`Departure Time (Actual)`)), ]
+WorkingData <- subset(WorkingData,!is.na(WorkingData$`Departure Time (Actual)`))
 WorkingData <- subset(WorkingData, `Departure Time (Actual)` < `Arrival Time (Actual)`)
+WorkingData <- subset(WorkingData, !is.na(In) & ! is.na(Out))
 
 WorkingData$StartHour <- hour(WorkingData$`Start Time (Scheduled)`)
 WorkingData$StartHourSqrd <- WorkingData$StartHour^2
@@ -20,6 +21,12 @@ WorkingData$StartHourCubd <- WorkingData$StartHour^3
 
 WorkingData$LateOrEarly <- ifelse(WorkingData$Late_Early > 0 , 1, 0)
 WorkingData$VeryLOE <- ifelse(abs(WorkingData$Late_Early) >= 60, 1, 0)
+
+WorkingData$AMPeak <- ifelse(WorkingData$StartHour == 8 , 1, 0)
+WorkingData$PMPeak <- ifelse((WorkingData$StartHour == 4 | WorkingData$StartHour == 5), 1, 0)
+WorkingData$EarlyMorLateNit <- ifelse((WorkingData$StartHour <= 6 | WorkingData$StartHour >= 21), 1, 0)
+WorkingData$Weekend <- ifelse((WorkingData$Column <= 70 & WorkingData$Column >= 60) , 1, 0)
+
 
 #Exploratory regressions
 summary(lm(Late_Early ~ as.factor(`Line Short`) + WC + In + Out + Miles + `Pay Time` + as.factor(Capac) + Crowd
@@ -35,11 +42,24 @@ summary(lm(Late_Early ~ Total + In + Out
 summary(lm(Late_Early ~ cases + deaths
            , data = WorkingData))
 
+summary(lm(Late_Early ~ OutgoingAtScheduledStart + IncomingAtScheduledEnd
+           , data = WorkingData))
+
+summary(lm(Late_Early ~ OutgoingAtRealStart + IncomingAtRealEnd
+           , data = WorkingData))
+
 
 #Stepwise Regression
-full.model <- lm(Late_Early ~ Date + `Start Time (Scheduled)` + `Pay Time` + WC + In + Out + Total + Miles +
-                   as.factor(`Line Short`) + as.factor(Column) + as.factor(Capac) + Crowd + StartHour + 
-                   StartHourSqrd + StartHourCubd + cases + deaths
+full.model <- lm(Late_Early ~ Date + `Start Time (Scheduled)` +
+                   `Pay Time` +
+                   WC + In + Out + Total + Miles +
+                   #as.factor(`Line Short`) +
+                   #as.factor(Column) +
+                   as.factor(Capac) + Crowd + StartHour + 
+                   StartHourSqrd + StartHourCubd + cases + deaths +
+                   OutgoingAtScheduledStart + IncomingAtScheduledEnd +
+                   OutgoingAtRealStart + IncomingAtRealEnd +
+                   AMPeak + PMPeak + EarlyMorLateNit + Weekend +
                  , data = WorkingData)
 step.model <- stepAIC(full.model, direction = "both", 
                       trace = FALSE)
