@@ -9,6 +9,7 @@ library(patchwork) # For dual axis charts
 library(MASS) # For stepwise regression
 
 WorkingData <- fread("Data/SepToMarData.csv")
+LinesList <- fread("Lines List.csv")
 
 WorkingData <- subset(WorkingData,`Line Long` != "ANY - On-Call")
 WorkingData <- subset(WorkingData,!is.na(WorkingData$`Departure Time (Actual)`))
@@ -27,10 +28,23 @@ WorkingData$PMPeak <- ifelse((WorkingData$StartHour == 4 | WorkingData$StartHour
 WorkingData$EarlyMorLateNit <- ifelse((WorkingData$StartHour <= 6 | WorkingData$StartHour >= 21), 1, 0)
 WorkingData$Weekend <- ifelse((WorkingData$Column <= 70 & WorkingData$Column >= 60) , 1, 0)
 
-WorkingData$Terminal <- ifelse(WorkingData$`Line Short` %in% c('A','C','D','J','L','W','X'), 'Silo', 'MU')
-WorkingData$Run <- ifelse((minute(WorkingData$`Start Time (Scheduled)`)==0 | minute(WorkingData$`Start Time (Scheduled)`)==10), 'First run', 'Second run')
+WorkingData$Terminal <- as.factor(ifelse(WorkingData$`Line Short` %in% c('A','C','D','J','L','W','X'), 'Silo', 'MU'))
+WorkingData$Run <- as.factor(ifelse((minute(WorkingData$`Start Time (Scheduled)`)==0 | minute(WorkingData$`Start Time (Scheduled)`)==10), 'First run', 'Second run'))
 WorkingData$FriPM <- ifelse(wday(WorkingData$Date)==5 & WorkingData$PMPeak==1, 1, 0)
 WorkingData <- subset(WorkingData,`Line Short` != "T")
+WorkingData <- subset(WorkingData, `Line Short` != "Air")
+
+LinesList <- LinesList[,c(2, 13:16)]
+WorkingData <- merge(WorkingData, LinesList, by.x = 'Line Long', by.y = "Line",all.x = TRUE, )
+WorkingData$hc.Clusters.2 <- as.factor(WorkingData$hc.Clusters.2)
+WorkingData$hc.Clusters.3 <- as.factor(WorkingData$hc.Clusters.3)
+WorkingData$hc.Clusters.4 <- as.factor(WorkingData$hc.Clusters.4)
+WorkingData$hc.Clusters.5 <- as.factor(WorkingData$hc.Clusters.5)
+
+# Fixing the Stepwise stuff
+WorkingData <- subset(WorkingData, !is.na(hc.Clusters.2))
+WorkingData <- subset(WorkingData, !is.na(Late_Early))
+
 
 
 #Exploratory regressions
@@ -58,13 +72,17 @@ summary(lm(Late_Early ~ OutgoingAtRealStart + IncomingAtRealEnd
 full.model <- lm(Late_Early ~ Date + `Start Time (Scheduled)` +
                    `Pay Time` +
                    WC + In + Out + Total + Miles +
-                   #as.factor(`Line Short`) +
-                   #as.factor(Column) +
+                   as.factor(`Line Short`) +
+                   as.factor(Column) +
+                   as.factor(`Line Long`) +
                    as.factor(Capac) + Crowd + StartHour + 
                    StartHourSqrd + StartHourCubd + cases + deaths +
-                   OutgoingAtScheduledStart + IncomingAtScheduledEnd +
-                   OutgoingAtRealStart + IncomingAtRealEnd +
-                   AMPeak + PMPeak + EarlyMorLateNit + Weekend +
+                   #OutgoingAtScheduledStart + IncomingAtScheduledEnd +
+                   #OutgoingAtRealStart + IncomingAtRealEnd +
+                   AMPeak + PMPeak + EarlyMorLateNit + Weekend #+ 
+                   #Terminal + Run +
+                   #as.factor(FriPM) +
+                   #hc.Clusters.2 + hc.Clusters.3 + hc.Clusters.4 + hc.Clusters.5
                  , data = WorkingData)
 step.model <- stepAIC(full.model, direction = "both", 
                       trace = FALSE)
